@@ -16,6 +16,11 @@ spring:
     password: ${RABBITMQ_DEFAULT_PASS:llm_gateway}
 
 llm-gateway:
+  security:
+    api-key:
+      enabled: false
+      pepper: ${API_KEY_PEPPER:}
+      hashes: []
   postgres:
     host: ${POSTGRES_HOST:localhost}
     port: ${POSTGRES_PORT:5432}

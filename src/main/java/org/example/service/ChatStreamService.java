@@ -23,21 +23,21 @@ public class ChatStreamService {
 
     private static final Logger log = LoggerFactory.getLogger(ChatStreamService.class);
 
-    private static final int DEFAULT_TIMEOUT_MS = 30_000;
-    private static final int MAX_TIMEOUT_MS = 120_000;
+    private static final int DEFAULT_TIMEOUT_MS = 30_000;//默认超时时间30秒
+    private static final int MAX_TIMEOUT_MS = 120_000;//最大超时时间120秒
 
-    private final UpstreamChatClient upstreamChatClient;
+    private final UpstreamChatClient upstreamChatClient;//上游Chat客户端
 
     public ChatStreamService(UpstreamChatClient upstreamChatClient) {
         this.upstreamChatClient = upstreamChatClient;
     }
 
     public Flux<ServerSentEvent<?>> stream(ChatStreamRequest request, String requestId) {
-        long startNanos = System.nanoTime();
+        long startNanos = System.nanoTime();//开始时间
 
         String model = request.model() != null ? request.model() : "mock";
-        int timeoutMs = normalizeTimeoutMs(request.timeoutMs());
-        String startedAt = Instant.now().toString();
+        int timeoutMs = normalizeTimeoutMs(request.timeoutMs());//规范化超时时间
+        String startedAt = Instant.now().toString();//开始时间
 
         ServerSentEvent<MetaEvent> meta = ServerSentEvent.<MetaEvent>builder()
                 .event("meta")

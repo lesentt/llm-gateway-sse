@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 
 @Component
+@org.springframework.core.annotation.Order(-100)
 public class RequestContextWebFilter implements WebFilter {
 
     private static final Logger log = LoggerFactory.getLogger(RequestContextWebFilter.class);

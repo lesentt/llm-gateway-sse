@@ -64,6 +64,10 @@ docker compose down
 
 当前 `src/main/resources/application.yml` 里已预留以下配置读取方式：
 
+- API Key（可选，默认关闭）：
+  - `llm-gateway.security.api-key.enabled=true`
+  - `llm-gateway.security.api-key.pepper`（建议通过环境变量 `API_KEY_PEPPER` 提供）
+  - `llm-gateway.security.api-key.hashes`（SHA-256 hex 列表；网关会对 `pepper:apiKey` 计算 SHA-256 后比对）
 - Redis：`REDIS_HOST` / `REDIS_PORT`
 - RabbitMQ：`RABBITMQ_HOST` / `RABBITMQ_PORT` / `RABBITMQ_DEFAULT_USER` / `RABBITMQ_DEFAULT_PASS`
 - Postgres：`POSTGRES_HOST` / `POSTGRES_PORT` / `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD`

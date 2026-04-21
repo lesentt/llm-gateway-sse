@@ -47,11 +47,11 @@ class ChatStreamControllerIT {
 
         FluxExchangeResult<ServerSentEvent<Map<String, Object>>> result = webTestClient.post()
                 .uri("/v1/chat/stream")
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.TEXT_EVENT_STREAM)
+                .contentType(MediaType.APPLICATION_JSON)//设置请求体为JSON
+                .accept(MediaType.TEXT_EVENT_STREAM)//设置响应体为SSE
                 .bodyValue(req)
-                .exchange()
-                .expectStatus().isOk()
+                .exchange()//发送请求
+                .expectStatus().isOk()//期望响应状态为OK
                 .returnResult(SSE_MAP);
 
         StepVerifier.create(result.getResponseBody().collectList())
