@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.api.error.ErrorResponse;
 import org.example.api.error.GatewayErrorCode;
 import org.example.config.GatewaySecurityProperties;
+import org.example.ratelimit.RateLimitWebFilter;
 import org.example.web.RequestId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +77,7 @@ public class ApiKeyAuthWebFilter implements WebFilter {
             return unauthorized(exchange, requestId);
         }
 
+        exchange.getAttributes().put(RateLimitWebFilter.API_KEY_HASH_ATTRIBUTE, expectedHash);
         return chain.filter(exchange);
     }
 

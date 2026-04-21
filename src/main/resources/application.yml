@@ -21,6 +21,10 @@ llm-gateway:
       enabled: false
       pepper: ${API_KEY_PEPPER:}
       hashes: []
+  ratelimit:
+    enabled: false
+    rpm: 100
+    window-seconds: 65
   postgres:
     host: ${POSTGRES_HOST:localhost}
     port: ${POSTGRES_PORT:5432}

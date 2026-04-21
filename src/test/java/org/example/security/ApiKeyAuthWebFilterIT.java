@@ -101,7 +101,7 @@ class ApiKeyAuthWebFilterIT {
                 .expectStatus().isOk()
                 .returnResult(SSE_MAP);
 
-        StepVerifier.create(result.getResponseBody().take(1))
+        StepVerifier.create(result.getResponseBody())
                 .assertNext(e -> Assertions.assertEquals("meta", e.event()))
                 .verifyComplete();
     }
