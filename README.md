@@ -5,6 +5,7 @@ Spring Boot 3 WebFlux + SSE LLM 网关（MVP 正在搭建中）。
 当前已完成：
 - `docker compose up -d --build` 一键启动：应用 + PostgreSQL(pgvector) + Redis + RabbitMQ
 - Actuator 健康检查：`GET /actuator/health`
+- SSE Demo（Mock 上游）：`POST /v1/chat/stream`（`meta/delta/done/error`）
 
 后续里程碑（M1+）会补齐：
 - `POST /v1/chat/stream`（SSE）：`meta/delta/done/error`
@@ -52,6 +53,7 @@ docker compose down
 - 应用：`http://localhost:8080`
 - 健康检查：`GET http://localhost:8080/actuator/health`
 - Prometheus 指标：`GET http://localhost:8080/actuator/prometheus`
+- SSE 接口：`POST http://localhost:8080/v1/chat/stream`
 - PostgreSQL：`localhost:${POSTGRES_PORT:-5432}`
 - Redis：`localhost:${REDIS_PORT:-6379}`
 - RabbitMQ：
@@ -82,3 +84,13 @@ docker compose up -d postgres redis rabbitmq
 mvn -DskipTests spring-boot:run
 ```
 
+## SSE Demo（Mock 上游）
+
+```bash
+curl -N ^
+  -H "Accept: text/event-stream" ^
+  -H "Content-Type: application/json" ^
+  -H "X-Request-Id: req_demo_001" ^
+  -d "{\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"timeoutMs\":2000}" ^
+  http://localhost:8080/v1/chat/stream
+```
