@@ -9,14 +9,11 @@ public class GatewayRateLimitProperties {
 
     private boolean enabled = false;
 
-    /**
-     * Requests per minute.
-     */
+  
+    //每分钟请求数
     private int rpm = 100;
 
-    /**
-     * Expiration seconds for the counter key (should be slightly greater than 60s).
-     */
+   //窗口时间秒
     private int windowSeconds = 65;
 
     public boolean isEnabled() {

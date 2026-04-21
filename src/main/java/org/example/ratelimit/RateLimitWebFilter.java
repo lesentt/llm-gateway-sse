@@ -1,6 +1,8 @@
 package org.example.ratelimit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.example.api.error.ErrorResponse;
 import org.example.api.error.GatewayErrorCode;
 import org.example.config.GatewayRateLimitProperties;
@@ -33,15 +35,18 @@ public class RateLimitWebFilter implements WebFilter {
     private final GatewayRateLimitProperties rateLimitProperties;
     private final RateLimitStore rateLimitStore;
     private final ObjectMapper objectMapper;
+    private final MeterRegistry meterRegistry;
 
     public RateLimitWebFilter(
             GatewayRateLimitProperties rateLimitProperties,
             RateLimitStore rateLimitStore,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            MeterRegistry meterRegistry
     ) {
         this.rateLimitProperties = rateLimitProperties;
         this.rateLimitStore = rateLimitStore;
         this.objectMapper = objectMapper;
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
@@ -72,6 +77,7 @@ public class RateLimitWebFilter implements WebFilter {
                         return chain.filter(exchange);
                     }
                     log.info("requestId={} rateLimited=true subject={} current={} limit={}", requestId, subject, current, rpm);
+                    recordRateLimited();
                     return tooManyRequests(exchange, requestId);
                 });
     }
@@ -117,5 +123,11 @@ public class RateLimitWebFilter implements WebFilter {
         }
         return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap(bytes)));
     }
-}
 
+    private void recordRateLimited() {
+        Counter.builder("gateway_rate_limited_total")
+                .description("Rate limited requests total")
+                .register(meterRegistry)
+                .increment();
+    }
+}

@@ -1,5 +1,8 @@
 package org.example.service;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.example.api.dto.ChatStreamRequest;
 import org.example.api.error.ErrorResponse;
 import org.example.api.error.GatewayErrorCode;
@@ -17,27 +20,32 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class ChatStreamService {
 
     private static final Logger log = LoggerFactory.getLogger(ChatStreamService.class);
 
-    private static final int DEFAULT_TIMEOUT_MS = 30_000;//默认超时时间30秒
-    private static final int MAX_TIMEOUT_MS = 120_000;//最大超时时间120秒
+    private static final int DEFAULT_TIMEOUT_MS = 30_000;
+    private static final int MAX_TIMEOUT_MS = 120_000;
 
-    private final UpstreamChatClient upstreamChatClient;//上游Chat客户端
+    private final UpstreamChatClient upstreamChatClient;
+    private final MeterRegistry meterRegistry;
 
-    public ChatStreamService(UpstreamChatClient upstreamChatClient) {
+    public ChatStreamService(UpstreamChatClient upstreamChatClient, MeterRegistry meterRegistry) {
         this.upstreamChatClient = upstreamChatClient;
+        this.meterRegistry = meterRegistry;
     }
 
     public Flux<ServerSentEvent<?>> stream(ChatStreamRequest request, String requestId) {
-        long startNanos = System.nanoTime();//开始时间
+        long startNanos = System.nanoTime();
 
         String model = request.model() != null ? request.model() : "mock";
-        int timeoutMs = normalizeTimeoutMs(request.timeoutMs());//规范化超时时间
-        String startedAt = Instant.now().toString();//开始时间
+        int timeoutMs = normalizeTimeoutMs(request.timeoutMs());
+        String startedAt = Instant.now().toString();
+
+        AtomicReference<String> finalStatus = new AtomicReference<>("done");
 
         ServerSentEvent<MetaEvent> meta = ServerSentEvent.<MetaEvent>builder()
                 .event("meta")
@@ -69,8 +77,19 @@ public class ChatStreamService {
         });
 
         return Flux.concat(Flux.just(meta), deltas, done)
-                .onErrorResume(ex -> Flux.just(toErrorEvent(ex, requestId)))
-                .doOnCancel(() -> log.info("requestId={} clientAborted=true", requestId));
+                .onErrorResume(ex -> {
+                    finalStatus.set("error");
+                    return Flux.just(toErrorEvent(ex, requestId));
+                })
+                .doOnCancel(() -> {
+                    finalStatus.set("cancel");
+                    log.info("requestId={} clientAborted=true", requestId);
+                })
+                .doFinally(signalType -> recordMetrics(
+                        model,
+                        finalStatus.get(),
+                        Duration.ofNanos(System.nanoTime() - startNanos)
+                ));
     }
 
     private static int normalizeTimeoutMs(Integer timeoutMs) {
@@ -97,4 +116,22 @@ public class ChatStreamService {
                 .data(ErrorResponse.of(code, message, requestId))
                 .build();
     }
+
+    private void recordMetrics(String model, String status, Duration latency) {
+        Counter.builder("gateway_chat_stream_requests_total")
+                .description("Chat stream requests total")
+                .tag("model", model)
+                .tag("status", status)
+                .register(meterRegistry)
+                .increment();
+
+        Timer.builder("gateway_chat_stream_latency")
+                .description("Chat stream end-to-end latency")
+                .tag("model", model)
+                .tag("status", status)
+                .publishPercentileHistogram()
+                .register(meterRegistry)
+                .record(latency);
+    }
 }
+

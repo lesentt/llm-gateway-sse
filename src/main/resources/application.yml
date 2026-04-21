@@ -41,6 +41,20 @@ management:
     health:
       probes:
         enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:http://localhost:4318/v1/traces}
   metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        gateway_chat_stream_latency: true
     tags:
       application: ${spring.application.name}
+
+logging:
+  pattern:
+    level: "%5p [trace=%X{traceId:-} span=%X{spanId:-}]"

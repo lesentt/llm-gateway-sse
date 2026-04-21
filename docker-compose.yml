@@ -17,6 +17,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-llm_gateway}
       POSTGRES_USER: ${POSTGRES_USER:-llm_gateway}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-llm_gateway}
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8080:8080"
     depends_on:
@@ -31,6 +32,61 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.105.0
+    pull_policy: never
+    profiles: ["obs"]
+    container_name: llm-gateway-sse-otel-collector
+    command: ["--config=/etc/otelcol-contrib/config.yml"]
+    volumes:
+      - ./docker/observability/otel-collector.yml:/etc/otelcol-contrib/config.yml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      jaeger:
+        condition: service_started
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    pull_policy: never
+    profiles: ["obs"]
+    container_name: llm-gateway-sse-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+      - "6831:6831/udp"
+      - "4319:4317"
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    pull_policy: never
+    profiles: ["obs"]
+    container_name: llm-gateway-sse-prometheus
+    volumes:
+      - ./docker/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      app:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    pull_policy: never
+    profiles: ["obs"]
+    container_name: llm-gateway-sse-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./docker/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      prometheus:
+        condition: service_started
 
   postgres:
     image: pgvector/pgvector:0.7.4-pg16

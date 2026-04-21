@@ -54,6 +54,9 @@ docker compose down
 - 健康检查：`GET http://localhost:8080/actuator/health`
 - Prometheus 指标：`GET http://localhost:8080/actuator/prometheus`
 - SSE 接口：`POST http://localhost:8080/v1/chat/stream`
+- Prometheus（obs profile）：`http://localhost:9090`
+- Grafana（obs profile）：`http://localhost:3000`
+- Jaeger（obs profile）：`http://localhost:16686`
 - PostgreSQL：`localhost:${POSTGRES_PORT:-5432}`
 - Redis：`localhost:${REDIS_PORT:-6379}`
 - RabbitMQ：
@@ -91,6 +94,20 @@ docker compose up -d postgres redis rabbitmq
 ```bash
 mvn -DskipTests spring-boot:run
 ```
+
+## 可观测（M3）
+
+启动带观测栈（Prometheus/Grafana/Jaeger）的本地环境：
+
+```bash
+docker compose --profile obs up -d --build
+docker compose ps
+```
+
+验收要点：
+- `curl -fsS http://localhost:8080/actuator/prometheus` 有输出
+- 在 Prometheus（`http://localhost:9090`）查询 `gateway_chat_stream_requests_total`
+- 发起一次 `/v1/chat/stream` 后，在 Jaeger（`http://localhost:16686`）能看到 trace（服务名 `llm-gateway-sse`）
 
 ## SSE Demo（Mock 上游）
 
