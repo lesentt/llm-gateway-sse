@@ -4,6 +4,7 @@ import org.example.api.dto.ChatMessage;
 import org.example.api.dto.ChatStreamRequest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
@@ -34,6 +35,7 @@ class ApiKeyAuthWebFilterIT {
 
     private final WebTestClient webTestClient;
 
+    @Autowired
     ApiKeyAuthWebFilterIT(WebTestClient webTestClient) {
         this.webTestClient = webTestClient;
     }
@@ -104,4 +106,3 @@ class ApiKeyAuthWebFilterIT {
                 .verifyComplete();
     }
 }
-
