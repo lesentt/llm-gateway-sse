@@ -8,8 +8,8 @@ Spring Boot 3 WebFlux + SSE LLM 网关（MVP 正在搭建中）。
 - SSE Demo（Mock 上游）：`POST /v1/chat/stream`（`meta/delta/done/error`）
 
 后续里程碑（M1+）会补齐：
-- `POST /v1/chat/stream`（SSE）：`meta/delta/done/error`
-- 统一错误结构、超时/降级、断连取消、可观测与文档等
+- 真实上游适配（非 mock）
+- 更完整的可观测与治理（限流/重试/配额等）
 
 ## 快速开始（Docker Compose）
 
@@ -86,11 +86,46 @@ mvn -DskipTests spring-boot:run
 
 ## SSE Demo（Mock 上游）
 
+### 1) 正常流式（meta -> delta... -> done）
+
 ```bash
 curl -N ^
   -H "Accept: text/event-stream" ^
   -H "Content-Type: application/json" ^
   -H "X-Request-Id: req_demo_001" ^
-  -d "{\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"timeoutMs\":2000}" ^
+  -d "{\"model\":\"mock\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"timeoutMs\":2000}" ^
+  http://localhost:8080/v1/chat/stream
+```
+
+### 2) 上游错误降级（meta -> delta... -> error）
+
+```bash
+curl -N ^
+  -H "Accept: text/event-stream" ^
+  -H "Content-Type: application/json" ^
+  -H "X-Request-Id: req_demo_002" ^
+  -d "{\"model\":\"mock_error\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"timeoutMs\":2000}" ^
+  http://localhost:8080/v1/chat/stream
+```
+
+### 3) 上游超时降级（meta -> error）
+
+```bash
+curl -N ^
+  -H "Accept: text/event-stream" ^
+  -H "Content-Type: application/json" ^
+  -H "X-Request-Id: req_demo_003" ^
+  -d "{\"model\":\"mock_slow\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"timeoutMs\":1}" ^
+  http://localhost:8080/v1/chat/stream
+```
+
+### 4) 客户端断连（取消上游）
+
+运行“正常流式”命令后按 `Ctrl+C` 中断连接，然后查看日志应包含：
+- `clientAborted=true`
+- `mockUpstream=cancelled`
+
+```bash
+docker compose logs -f app
   http://localhost:8080/v1/chat/stream
 ```

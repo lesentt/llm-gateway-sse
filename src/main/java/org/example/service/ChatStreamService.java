@@ -48,6 +48,7 @@ public class ChatStreamService {
         AtomicInteger totalChars = new AtomicInteger(0);
 
         Flux<ServerSentEvent<?>> deltas = upstreamChatClient.stream(request, requestId)
+                .doFinally(signalType -> log.info("requestId={} upstreamSignal={}", requestId, signalType))
                 .timeout(Duration.ofMillis(timeoutMs))
                 .map(chunk -> {
                     totalChars.addAndGet(chunk != null ? chunk.length() : 0);

@@ -29,7 +29,9 @@ public class ChatStreamController {
             @Valid @RequestBody ChatStreamRequest request,
             ServerWebExchange exchange
     ) {
-        String requestId = String.valueOf(exchange.getAttribute(RequestId.ATTRIBUTE_NAME));
+        // getAttribute<T> + String.valueOf overload resolution can wrongly infer T as char[] (bogus checkcast).
+        Object attr = exchange.getAttribute(RequestId.ATTRIBUTE_NAME);
+        String requestId = attr instanceof String s ? s : RequestId.generate();
         if (StringUtils.hasText(request.requestId())) {
             requestId = request.requestId();
             exchange.getAttributes().put(RequestId.ATTRIBUTE_NAME, requestId);

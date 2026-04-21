@@ -15,10 +15,22 @@ public class MockUpstreamChatClient implements UpstreamChatClient {
 
     @Override
     public Flux<String> stream(ChatStreamRequest request, String requestId) {
-        return Flux.just("Hello", " ", "from", " ", "mock", " ", "upstream", "!")
-                .delayElements(Duration.ofMillis(10))
-                .doOnSubscribe(s -> log.info("requestId={} mockUpstream=subscribed", requestId))
-                .doOnCancel(() -> log.info("requestId={} mockUpstream=cancelled", requestId));
+        String model = request.model() != null ? request.model() : "mock";
+        Flux<String> flux = switch (model) {
+            case "mock_error" -> Flux.concat(
+                    Flux.just("Hello", " "),
+                    Flux.error(new RuntimeException("mock upstream error"))
+            ).delayElements(Duration.ofMillis(10));
+            case "mock_slow" -> Flux.just("Hello", " ", "from", " ", "mock", " ", "upstream", "!")
+                    .delayElements(Duration.ofMillis(500));
+            default -> Flux.just("Hello", " ", "from", " ", "mock", " ", "upstream", "!")
+                    .delayElements(Duration.ofMillis(10));
+        };
+
+        return flux
+                .doOnSubscribe(s -> log.info("requestId={} mockUpstream=subscribed model={}", requestId, model))
+                .doOnCancel(() -> log.info("requestId={} mockUpstream=cancelled model={}", requestId, model))
+                .doFinally(signalType -> log.info("requestId={} mockUpstream=terminated model={} signal={}",
+                        requestId, model, signalType));
     }
 }
-

@@ -5,6 +5,7 @@ import org.example.api.dto.ChatStreamRequest;
 import org.example.api.error.GatewayErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
@@ -27,6 +28,7 @@ class ChatStreamControllerIT {
 
     private final WebTestClient webTestClient;
 
+    @Autowired
     ChatStreamControllerIT(WebTestClient webTestClient) {
         this.webTestClient = webTestClient;
     }
@@ -106,6 +108,44 @@ class ChatStreamControllerIT {
                     Map<?, ?> error = (Map<?, ?>) errorObj;
                     Assertions.assertEquals("req_test_timeout", error.get("requestId"));
                     Assertions.assertEquals(GatewayErrorCode.UPSTREAM_TIMEOUT.name(), error.get("code"));
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void stream_upstreamErrorShouldReturnErrorEvent() {
+        ChatStreamRequest req = new ChatStreamRequest(
+                "req_test_upstream_error",
+                "mock_error",
+                List.of(new ChatMessage("user", "hi")),
+                0.2,
+                16,
+                2000,
+                null
+        );
+
+        FluxExchangeResult<ServerSentEvent<Map<String, Object>>> result = webTestClient.post()
+                .uri("/v1/chat/stream")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .bodyValue(req)
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult(SSE_MAP);
+
+        StepVerifier.create(result.getResponseBody().collectList())
+                .assertNext(events -> {
+                    Assertions.assertTrue(events.size() >= 2);
+                    Assertions.assertEquals("meta", events.getFirst().event());
+                    Assertions.assertEquals("error", events.getLast().event());
+
+                    Map<String, Object> errorEvent = events.getLast().data();
+                    Assertions.assertNotNull(errorEvent);
+                    Object errorObj = errorEvent.get("error");
+                    Assertions.assertInstanceOf(Map.class, errorObj);
+                    Map<?, ?> error = (Map<?, ?>) errorObj;
+                    Assertions.assertEquals("req_test_upstream_error", error.get("requestId"));
+                    Assertions.assertEquals(GatewayErrorCode.UPSTREAM_ERROR.name(), error.get("code"));
                 })
                 .verifyComplete();
     }
