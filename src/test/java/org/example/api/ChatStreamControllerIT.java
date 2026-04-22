@@ -70,6 +70,8 @@ class ChatStreamControllerIT {
                     Assertions.assertEquals("done", last.event());
                     Assertions.assertNotNull(last.data());
                     Assertions.assertEquals("req_test_success", last.data().get("requestId"));
+                    Assertions.assertNotNull(last.data().get("tokenEstimated"));
+                    Assertions.assertNotNull(last.data().get("costEstimated"));
                 })
                 .verifyComplete();
     }

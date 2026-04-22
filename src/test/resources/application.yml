@@ -1,0 +1,6 @@
+llm-gateway:
+  m4:
+    persistence:
+      enabled: false
+    events:
+      enabled: false

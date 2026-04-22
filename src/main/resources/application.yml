@@ -31,6 +31,18 @@ llm-gateway:
     database: ${POSTGRES_DB:llm_gateway}
     username: ${POSTGRES_USER:llm_gateway}
     password: ${POSTGRES_PASSWORD:llm_gateway}
+  m4:
+    persistence:
+      enabled: ${M4_PERSISTENCE_ENABLED:true}
+      connect-timeout-seconds: ${M4_PERSISTENCE_CONNECT_TIMEOUT_SECONDS:2}
+    events:
+      enabled: ${M4_EVENTS_ENABLED:true}
+      exchange: ${M4_EVENTS_EXCHANGE:llm.gateway.events}
+      routing-key: ${M4_EVENTS_ROUTING_KEY:request.completed}
+    cost-estimation:
+      chars-per-token: ${M4_COST_CHARS_PER_TOKEN:4}
+      usd-per-1k-tokens: ${M4_COST_USD_PER_1K_TOKENS:0.001}
+      algorithm-version: ${M4_COST_ALGORITHM_VERSION:v1_chars_div_4}
 
 management:
   endpoints:
