@@ -22,21 +22,18 @@
 ## 快速开始
 
 ### 1) 环境准备
-- JDK 21（示例：`D:\Jdk`）
+- JDK 21
 - Docker Desktop
 - PowerShell
 
 ### 2) 启动依赖服务
 ```powershell
-cd C:\Users\ASUS\IdeaProjects\llm-gateway-sse
+cd 项目路径
 docker compose up -d postgres redis rabbitmq
 ```
 
 ### 3) 启动应用（真实百炼上游）
 ```powershell
-$env:JAVA_HOME="D:\Jdk"
-$env:Path="$env:JAVA_HOME\bin;$env:Path"
-
 $env:UPSTREAM_MODE="openai"
 $env:OPENAI_BASE_URL="https://dashscope.aliyuncs.com"
 $env:OPENAI_CHAT_COMPLETIONS_PATH="/compatible-mode/v1/chat/completions"
