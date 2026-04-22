@@ -52,7 +52,7 @@ public class ChatStreamService {
         long startNanos = System.nanoTime();
         Instant startedAt = Instant.now();
 
-        String model = request.model() != null ? request.model() : "mock";
+        String model = upstreamChatClient.resolveModel(request);
         int timeoutMs = normalizeTimeoutMs(request.timeoutMs());
         String startedAtText = startedAt.toString();
 

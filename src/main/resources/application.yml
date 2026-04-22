@@ -31,6 +31,13 @@ llm-gateway:
     database: ${POSTGRES_DB:llm_gateway}
     username: ${POSTGRES_USER:llm_gateway}
     password: ${POSTGRES_PASSWORD:llm_gateway}
+  upstream:
+    mode: ${UPSTREAM_MODE:mock}
+    openai:
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      chat-completions-path: ${OPENAI_CHAT_COMPLETIONS_PATH:/v1/chat/completions}
+      api-key: ${OPENAI_API_KEY:}
+      default-model: ${OPENAI_DEFAULT_MODEL:gpt-4o-mini}
   m4:
     persistence:
       enabled: ${M4_PERSISTENCE_ENABLED:true}

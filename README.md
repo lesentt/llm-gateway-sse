@@ -185,3 +185,25 @@ Invoke-WebRequest -Uri "http://localhost:8080/v1/chat/stream" `
 # 3) 查看 RabbitMQ 管理台（默认）
 # http://localhost:15672
 ```
+
+## Real Upstream (OpenAI) Minimal Setup
+- Set `UPSTREAM_MODE=openai`
+- Set `OPENAI_API_KEY` (required)
+- Optional: `OPENAI_BASE_URL` (default `https://api.openai.com`)
+- Optional: `OPENAI_CHAT_COMPLETIONS_PATH` (default `/v1/chat/completions`)
+- Optional: `OPENAI_DEFAULT_MODEL` (default `gpt-4o-mini`)
+
+```powershell
+$env:UPSTREAM_MODE="openai"
+$env:OPENAI_API_KEY="<YOUR_OPENAI_API_KEY>"
+$env:OPENAI_DEFAULT_MODEL="gpt-4o-mini"
+mvn spring-boot:run
+```
+
+```powershell
+Invoke-WebRequest -Uri "http://localhost:8080/v1/chat/stream" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Headers @{Accept="text/event-stream"; "X-Request-Id"="req_real_upstream_001"} `
+  -Body '{"messages":[{"role":"user","content":"Use one sentence to explain Spring WebFlux."}],"timeoutMs":30000}'
+```
