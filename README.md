@@ -154,3 +154,34 @@ curl -N ^
 docker compose logs -f app
   http://localhost:8080/v1/chat/stream
 ```
+
+## M4（异步与成本估算）已落地
+- `done` 事件包含：`tokenEstimated`、`costEstimated`
+- 请求完成后会记录：`requestId/model/status/latency/token/cost/costAlgorithmVersion`
+- 已发布 RabbitMQ 事件：`request.completed`（默认 exchange: `llm.gateway.events`）
+
+### M4 相关配置
+- `llm-gateway.m4.persistence.enabled`：是否启用完成记录持久化（默认 `true`）
+- `llm-gateway.m4.persistence.connect-timeout-seconds`：PostgreSQL 连接超时秒数（默认 `2`）
+- `llm-gateway.m4.events.enabled`：是否启用完成事件发布（默认 `true`）
+- `llm-gateway.m4.events.exchange`：事件交换机（默认 `llm.gateway.events`）
+- `llm-gateway.m4.events.routing-key`：路由键（默认 `request.completed`）
+- `llm-gateway.m4.cost-estimation.chars-per-token`：字符到 token 的估算比例（默认 `4`）
+- `llm-gateway.m4.cost-estimation.usd-per-1k-tokens`：每 1k token 估算美元成本（默认 `0.001`）
+- `llm-gateway.m4.cost-estimation.algorithm-version`：估算算法版本（默认 `v1_chars_div_4`）
+
+### 本地最小验证（PowerShell）
+```powershell
+# 1) 启动依赖
+docker compose up -d postgres redis rabbitmq
+
+# 2) 发起一次流式请求
+Invoke-WebRequest -Uri "http://localhost:8080/v1/chat/stream" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Headers @{Accept="text/event-stream"; "X-Request-Id"="req_m4_demo_001"} `
+  -Body '{"model":"mock","messages":[{"role":"user","content":"hi"}],"timeoutMs":2000}'
+
+# 3) 查看 RabbitMQ 管理台（默认）
+# http://localhost:15672
+```
