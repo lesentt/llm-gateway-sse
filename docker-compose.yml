@@ -97,7 +97,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-llm_gateway}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-llm_gateway}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5786}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -127,7 +127,7 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-llm_gateway}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-llm_gateway}
     ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_PORT:-5785}:5672"
       - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]

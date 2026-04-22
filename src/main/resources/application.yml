@@ -11,7 +11,7 @@ spring:
 
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
+    port: ${RABBITMQ_PORT:5785}
     username: ${RABBITMQ_DEFAULT_USER:llm_gateway}
     password: ${RABBITMQ_DEFAULT_PASS:llm_gateway}
 
@@ -27,7 +27,7 @@ llm-gateway:
     window-seconds: 65
   postgres:
     host: ${POSTGRES_HOST:localhost}
-    port: ${POSTGRES_PORT:5432}
+    port: ${POSTGRES_PORT:5786}
     database: ${POSTGRES_DB:llm_gateway}
     username: ${POSTGRES_USER:llm_gateway}
     password: ${POSTGRES_PASSWORD:llm_gateway}

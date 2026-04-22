@@ -32,10 +32,17 @@ class OpenAiUpstreamChatClientTest {
     void extractDeltaContentShouldReturnTextToken() {
         OpenAiUpstreamChatClient client = createClient("gpt-4o-mini");
         String payload = """
-                {"choices":[{"delta":{"content":"你好"}}]}
+                {"choices":[{"delta":{"content":"hello"}}]}
                 """;
 
-        Assertions.assertEquals("你好", client.extractDeltaContent(payload));
+        Assertions.assertEquals("hello", client.extractDeltaContent(payload, "req_test_001"));
+    }
+
+    @Test
+    void extractDeltaContentShouldIgnoreNonJsonChunk() {
+        OpenAiUpstreamChatClient client = createClient("gpt-4o-mini");
+        Assertions.assertEquals("", client.extractDeltaContent("event: ping", "req_test_002"));
+        Assertions.assertEquals("", client.extractDeltaContent("{bad json", "req_test_002"));
     }
 
     @Test

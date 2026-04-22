@@ -10,12 +10,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,13 +72,22 @@ public class OpenAiUpstreamChatClient implements UpstreamChatClient {
                 .headers(headers -> headers.setBearerAuth(apiKey))
                 .bodyValue(payload)
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, response ->
+                        response.bodyToMono(String.class)
+                                .defaultIfEmpty("")
+                                .flatMap(body -> Mono.error(new IllegalStateException(
+                                        "Upstream HTTP " + response.statusCode().value() + " body=" + body
+                                )))
+                )
                 .bodyToFlux(SSE_STRING)
                 .mapNotNull(ServerSentEvent::data)
                 .takeUntil(this::isDoneEvent)
                 .filter(data -> !isDoneEvent(data))
-                .map(this::extractDeltaContent)
+                .map(data -> extractDeltaContent(data, requestId))
                 .filter(StringUtils::hasLength)
                 .doOnSubscribe(s -> log.info("requestId={} openaiUpstream=subscribed model={}", requestId, model))
+                .doOnError(ex -> log.warn("requestId={} openaiUpstream=error model={} message={}",
+                        requestId, model, ex.getMessage()))
                 .doOnCancel(() -> log.info("requestId={} openaiUpstream=cancelled model={}", requestId, model))
                 .doFinally(signalType -> log.info("requestId={} openaiUpstream=terminated model={} signal={}",
                         requestId, model, signalType));
@@ -100,9 +111,17 @@ public class OpenAiUpstreamChatClient implements UpstreamChatClient {
                 .toList();
     }
 
-    String extractDeltaContent(String data) {
+    String extractDeltaContent(String data, String requestId) {
+        if (!StringUtils.hasText(data)) {
+            return "";
+        }
+        String normalized = data.trim();
+        if (!normalized.startsWith("{")) {
+            log.debug("requestId={} openaiUpstream=skipNonJsonChunk chunk={}", requestId, abbreviate(normalized));
+            return "";
+        }
         try {
-            JsonNode root = objectMapper.readTree(data);
+            JsonNode root = objectMapper.readTree(normalized);
             JsonNode choices = root.path("choices");
             if (!choices.isArray() || choices.isEmpty()) {
                 return "";
@@ -110,7 +129,17 @@ public class OpenAiUpstreamChatClient implements UpstreamChatClient {
             JsonNode contentNode = choices.get(0).path("delta").path("content");
             return contentNode.isTextual() ? contentNode.asText() : "";
         } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("Invalid upstream stream payload", ex);
+            log.debug("requestId={} openaiUpstream=skipInvalidJsonChunk chunk={} message={}",
+                    requestId, abbreviate(normalized), ex.getOriginalMessage());
+            return "";
         }
+    }
+
+    private String abbreviate(String data) {
+        int maxLen = 160;
+        if (data.length() <= maxLen) {
+            return data;
+        }
+        return data.substring(0, maxLen) + "...";
     }
 }

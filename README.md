@@ -60,7 +60,7 @@ docker compose down
 - PostgreSQL：`localhost:${POSTGRES_PORT:-5432}`
 - Redis：`localhost:${REDIS_PORT:-6379}`
 - RabbitMQ：
-  - AMQP：`localhost:${RABBITMQ_PORT:-5672}`
+  - AMQP：`localhost:${RABBITMQ_PORT:-5785}`
   - 管理台：`http://localhost:${RABBITMQ_MANAGEMENT_PORT:-15672}`（默认账号密码见 `.env`）
 
 ## 配置说明（M0 占位）
